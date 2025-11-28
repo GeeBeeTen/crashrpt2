@@ -1,9 +1,8 @@
-
 #if 0 /* in case someone actually tries to compile this */
 
 /* example.c - an example of using libpng
  *
- * Maintained 2018 Cosmin Truta
+ * Maintained 2018-2025 Cosmin Truta
  * Maintained 1998-2016 Glenn Randers-Pehrson
  * Maintained 1996-1997 Andreas Dilger
  * Written 1995-1996 Guy Eric Schalnat, Group 42, Inc.
@@ -57,7 +56,7 @@ int main(int argc, const char **argv)
       /* The first argument is the file to read: */
       if (png_image_begin_read_from_file(&image, argv[1]) != 0)
       {
-         png_bytep buffer;
+         png_byte *buffer;
 
          /* Set the format in which to read the PNG file; this code chooses a
           * simple sRGB format with a non-associated alpha channel, adequate to
@@ -125,6 +124,7 @@ int main(int argc, const char **argv)
                png_image_free(&image);
             else
                free(buffer);
+         }
       }
 
       /* Something went wrong reading or writing the image.  libpng stores a
@@ -179,11 +179,11 @@ int main(int argc, const char **argv)
  *    components.
  *
  * You do not have to read directly from a file.  You can read from memory or,
- * on systems that support it, from a <stdio.h> FILE*.  This is controlled by
- * the particular png_image_read_from_ function you call at the start.
- * Likewise, on write, you can write to a FILE* if your system supports it.
- * Check the macro PNG_STDIO_SUPPORTED to see if stdio support has been
- * included in your libpng build.
+ * on systems that support <stdio.h>, from a FILE object.  This is controlled
+ * by the particular png_image_begin_read_from_ function you call at the start.
+ * Likewise, on write, you can write to a FILE object if your system supports
+ * <stdio.h>.  The macro PNG_STDIO_SUPPORTED indicates if stdio is available
+ * and accessible from your libpng build.
  *
  * If you read 16-bit (PNG_FORMAT_FLAG_LINEAR) data, you may need to write it
  * in the 8-bit format for display.  You do this by setting the convert_to_8bit
@@ -258,9 +258,9 @@ int check_if_png(char *file_name, FILE **fp)
       return 0;
 
    /* Compare the first PNG_BYTES_TO_CHECK bytes of the signature.
-    * Return nonzero (true) if they match.
+    * Return true if they match.
     */
-   return(!png_sig_cmp(buf, 0, PNG_BYTES_TO_CHECK));
+   return png_sig_cmp(buf, 0, PNG_BYTES_TO_CHECK) == 0;
 }
 
 /* Read a PNG file.  You may want to return an error code if the read
@@ -272,21 +272,21 @@ int check_if_png(char *file_name, FILE **fp)
 #ifdef open_file /* prototype 1 */
 void read_png(char *file_name) /* We need to open the file */
 {
-   png_structp png_ptr;
-   png_infop info_ptr;
+   png_struct *png_ptr;
+   png_info *info_ptr;
    int sig_read = 0;
    png_uint_32 width, height;
    int bit_depth, color_type, interlace_type;
    FILE *fp;
 
    if ((fp = fopen(file_name, "rb")) == NULL)
-      return (ERROR);
+      return ERROR;
 
 #else no_open_file /* prototype 2 */
 void read_png(FILE *fp, int sig_read) /* File is already open */
 {
-   png_structp png_ptr;
-   png_infop info_ptr;
+   png_struct *png_ptr;
+   png_info *info_ptr;
    png_uint_32 width, height;
    int bit_depth, color_type, interlace_type;
 #endif no_open_file /* Only use one prototype! */
@@ -298,12 +298,12 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
     * was compiled with a compatible version of the library.  REQUIRED.
     */
    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-       png_voidp user_error_ptr, user_error_fn, user_warning_fn);
+       void *user_error_ptr, user_error_fn, user_warning_fn);
 
    if (png_ptr == NULL)
    {
       fclose(fp);
-      return (ERROR);
+      return ERROR;
    }
 
    /* Allocate/initialize the memory for image information.  REQUIRED. */
@@ -312,7 +312,7 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
    {
       fclose(fp);
       png_destroy_read_struct(&png_ptr, NULL, NULL);
-      return (ERROR);
+      return ERROR;
    }
 
    /* Set error handling if you are using the setjmp/longjmp method (this is
@@ -325,7 +325,7 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
       png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
       fclose(fp);
       /* If we get here, we had a problem reading the file. */
-      return (ERROR);
+      return ERROR;
    }
 
    /* One of the following I/O initialization methods is REQUIRED. */
@@ -470,7 +470,7 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
    if ((color_type & PNG_COLOR_MASK_COLOR) != 0)
    {
       int num_palette;
-      png_colorp palette;
+      png_color *palette;
 
       /* This reduces the image to the application-supplied palette. */
       if (/* We have our own palette */)
@@ -483,7 +483,7 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
       /* This reduces the image to the palette supplied in the file. */
       else if (png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette) != 0)
       {
-         png_uint_16p histogram = NULL;
+         png_uint_16 *histogram = NULL;
          png_get_hIST(png_ptr, info_ptr, &histogram);
          png_set_quantize(png_ptr, palette, num_palette,
              max_screen_colors, histogram, 0);
@@ -500,7 +500,7 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
     */
    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_sBIT) != 0)
    {
-      png_color_8p sig_bit_p;
+      png_color_8 *sig_bit_p;
       png_get_sBIT(png_ptr, info_ptr, &sig_bit_p);
       png_set_shift(png_ptr, sig_bit_p);
    }
@@ -535,7 +535,7 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
    png_read_update_info(png_ptr, info_ptr);
 
    /* Allocate the memory to hold the image using the fields of info_ptr. */
-   png_bytep row_pointers[height];
+   png_byte *row_pointers[height];
    for (row = 0; row < height; row++)
       row_pointers[row] = NULL; /* Clear the pointer array */
    for (row = 0; row < height; row++)
@@ -584,13 +584,13 @@ void read_png(FILE *fp, int sig_read) /* File is already open */
    fclose(fp);
 
    /* That's it! */
-   return (OK);
+   return OK;
 }
 
 /* Progressively read a file */
 
 int
-initialize_png_reader(png_structp *png_ptr, png_infop *info_ptr)
+initialize_png_reader(png_struct **png_ptr, png_info **info_ptr)
 {
    /* Create and initialize the png_struct with the desired error handler
     * functions.  If you want to use the default stderr and longjump method,
@@ -599,22 +599,22 @@ initialize_png_reader(png_structp *png_ptr, png_infop *info_ptr)
     * linked libraries.
     */
    *png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-        png_voidp user_error_ptr, user_error_fn, user_warning_fn);
+        void *user_error_ptr, user_error_fn, user_warning_fn);
    if (*png_ptr == NULL)
    {
       *info_ptr = NULL;
-      return (ERROR);
+      return ERROR;
    }
    *info_ptr = png_create_info_struct(png_ptr);
    if (*info_ptr == NULL)
    {
       png_destroy_read_struct(png_ptr, info_ptr, NULL);
-      return (ERROR);
+      return ERROR;
    }
    if (setjmp(png_jmpbuf((*png_ptr))))
    {
       png_destroy_read_struct(png_ptr, info_ptr, NULL);
-      return (ERROR);
+      return ERROR;
    }
 
    /* You will need to provide all three function callbacks,
@@ -631,18 +631,18 @@ initialize_png_reader(png_structp *png_ptr, png_infop *info_ptr)
     */
    png_set_progressive_read_fn(*png_ptr, (void *)stream_data,
        info_callback, row_callback, end_callback);
-   return (OK);
+   return OK;
 }
 
 int
-process_data(png_structp *png_ptr, png_infop *info_ptr,
-    png_bytep buffer, png_uint_32 length)
+process_data(png_struct **png_ptr, png_info **info_ptr,
+    png_byte *buffer, png_uint_32 length)
 {
    if (setjmp(png_jmpbuf((*png_ptr))))
    {
       /* Free the png_ptr and info_ptr memory on error. */
       png_destroy_read_struct(png_ptr, info_ptr, NULL);
-      return (ERROR);
+      return ERROR;
    }
 
    /* Give chunks of data as they arrive from the data stream
@@ -656,10 +656,10 @@ process_data(png_structp *png_ptr, png_infop *info_ptr,
     * callback, if you aren't already displaying them there.
     */
    png_process_data(*png_ptr, *info_ptr, buffer, length);
-   return (OK);
+   return OK;
 }
 
-info_callback(png_structp png_ptr, png_infop info)
+info_callback(png_struct *png_ptr, png_info *info)
 {
    /* Do any setup here, including setting any of the transformations
     * mentioned in the Reading PNG files section.  For now, you _must_
@@ -670,7 +670,7 @@ info_callback(png_structp png_ptr, png_infop info)
     */
 }
 
-row_callback(png_structp png_ptr, png_bytep new_row,
+row_callback(png_struct *png_ptr, png_byte *new_row,
     png_uint_32 row_num, int pass)
 {
    /* This function is called for every row in the image.  If the
@@ -690,7 +690,7 @@ row_callback(png_structp png_ptr, png_bytep new_row,
     */
 
    /* Get pointer to corresponding row in our PNG read buffer. */
-   png_bytep old_row = ((png_bytep *)our_data)[row_num];
+   png_byte *old_row = ((png_byte **)our_data)[row_num];
 
 #ifdef PNG_READ_INTERLACING_SUPPORTED
    /* If both rows are allocated, then copy the new row
@@ -722,7 +722,7 @@ row_callback(png_structp png_ptr, png_bytep new_row,
 #endif /* READ_INTERLACING */
 }
 
-end_callback(png_structp png_ptr, png_infop info)
+end_callback(png_struct *png_ptr, png_info *info)
 {
    /* This function is called when the whole image has been read,
     * including any chunks after the image (up to and including
@@ -739,14 +739,14 @@ end_callback(png_structp png_ptr, png_infop info)
 void write_png(char *file_name /* , ... other image information ... */)
 {
    FILE *fp;
-   png_structp png_ptr;
-   png_infop info_ptr;
-   png_colorp palette;
+   png_struct *png_ptr;
+   png_info *info_ptr;
+   png_color *palette;
 
    /* Open the file */
    fp = fopen(file_name, "wb");
    if (fp == NULL)
-      return (ERROR);
+      return ERROR;
 
    /* Create and initialize the png_struct with the desired error handler
     * functions.  If you want to use the default stderr and longjump method,
@@ -755,11 +755,11 @@ void write_png(char *file_name /* , ... other image information ... */)
     * in case we are using dynamically linked libraries.  REQUIRED.
     */
    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
-       png_voidp user_error_ptr, user_error_fn, user_warning_fn);
+       void *user_error_ptr, user_error_fn, user_warning_fn);
    if (png_ptr == NULL)
    {
       fclose(fp);
-      return (ERROR);
+      return ERROR;
    }
 
    /* Allocate/initialize the image information data.  REQUIRED. */
@@ -768,7 +768,7 @@ void write_png(char *file_name /* , ... other image information ... */)
    {
       fclose(fp);
       png_destroy_write_struct(&png_ptr,  NULL);
-      return (ERROR);
+      return ERROR;
    }
 
    /* Set up error handling.  REQUIRED if you aren't supplying your own
@@ -779,7 +779,7 @@ void write_png(char *file_name /* , ... other image information ... */)
       /* If we get here, we had a problem writing the file. */
       fclose(fp);
       png_destroy_write_struct(&png_ptr, &info_ptr);
-      return (ERROR);
+      return ERROR;
    }
 
    /* One of the following I/O initialization functions is REQUIRED. */
@@ -821,7 +821,7 @@ void write_png(char *file_name /* , ... other image information ... */)
        PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
    /* Set the palette if there is one.  REQUIRED for indexed-color images. */
-   palette = (png_colorp)png_malloc(png_ptr,
+   palette = (png_color *)png_malloc(png_ptr,
        PNG_MAX_PALETTE_LENGTH * (sizeof (png_color)));
    /* ... Set palette colors ... */
    png_set_PLTE(png_ptr, info_ptr, palette, PNG_MAX_PALETTE_LENGTH);
@@ -963,9 +963,9 @@ void write_png(char *file_name /* , ... other image information ... */)
       png_error(png_ptr, "Image data buffer would be too large");
 
    png_byte image[height * width * bytes_per_pixel];
-   png_bytep row_pointers[height];
+   png_byte *row_pointers[height];
 
-   if (height > PNG_UINT_32_MAX / (sizeof (png_bytep)))
+   if (height > PNG_UINT_32_MAX / (sizeof (png_byte *)))
       png_error(png_ptr, "Image is too tall to process in memory");
 
    /* Set up pointers into your "image" byte array. */
@@ -1034,7 +1034,7 @@ void write_png(char *file_name /* , ... other image information ... */)
    fclose(fp);
 
    /* That's it! */
-   return (OK);
+   return OK;
 }
 
 #endif /* if 0 */

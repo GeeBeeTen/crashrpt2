@@ -1,7 +1,6 @@
-
 /* pngrio.c - functions for data input
  *
- * Copyright (c) 2018 Cosmin Truta
+ * Copyright (c) 2018-2025 Cosmin Truta
  * Copyright (c) 1998-2002,2004,2006-2016,2018 Glenn Randers-Pehrson
  * Copyright (c) 1996-1997 Andreas Dilger
  * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
@@ -29,7 +28,7 @@
  * to read more than 64K on a 16-bit machine.
  */
 void /* PRIVATE */
-png_read_data(png_structrp png_ptr, png_bytep data, size_t length)
+png_read_data(png_struct *png_ptr, png_byte *data, size_t length)
 {
    png_debug1(4, "reading %d bytes", (int)length);
 
@@ -46,8 +45,8 @@ png_read_data(png_structrp png_ptr, png_bytep data, size_t length)
  * read_data function and use it at run time with png_set_read_fn(), rather
  * than changing the library.
  */
-void PNGCBAPI
-png_default_read_data(png_structp png_ptr, png_bytep data, size_t length)
+void
+png_default_read_data(png_struct *png_ptr, png_byte *data, size_t length)
 {
    size_t check;
 
@@ -57,7 +56,7 @@ png_default_read_data(png_structp png_ptr, png_bytep data, size_t length)
    /* fread() returns 0 on error, so it is OK to store this in a size_t
     * instead of an int, which is what fread() actually returns.
     */
-   check = fread(data, 1, length, png_voidcast(png_FILE_p, png_ptr->io_ptr));
+   check = fread(data, 1, length, png_voidcast(FILE *, png_ptr->io_ptr));
 
    if (check != length)
       png_error(png_ptr, "Read Error");
@@ -83,8 +82,8 @@ png_default_read_data(png_structp png_ptr, png_bytep data, size_t length)
  *                May be NULL, in which case libpng's default function will
  *                be used.
  */
-void PNGAPI
-png_set_read_fn(png_structrp png_ptr, png_voidp io_ptr,
+void
+png_set_read_fn(png_struct *png_ptr, void *io_ptr,
     png_rw_ptr read_data_fn)
 {
    if (png_ptr == NULL)
