@@ -385,6 +385,7 @@ CCrashInfoReader::CCrashInfoReader()
 	m_uPriorities[CR_HTTP] = 3;
 	m_uPriorities[CR_SMTP] = 2;
 	m_uPriorities[CR_SMAPI] = 1;
+	m_uPriorities[CR_POWERSHELL] = 0;
 	m_bGenerateMinidump = TRUE;
 	m_MinidumpType = MiniDumpNormal;
 	m_bAddScreenshot = FALSE;
@@ -551,13 +552,15 @@ int CCrashInfoReader::UnpackCrashDescription(CErrorReportInfo& eri)
 	m_nRestartTimeout = m_pCrashDesc->m_nRestartTimeout;
     m_nMaxReportsPerDay = m_pCrashDesc->m_nMaxReportsPerDay;
     UnpackString(m_pCrashDesc->m_dwUrlOffs, m_sUrl);
+    UnpackString(m_pCrashDesc->m_dwPowerShellScriptOffs, m_sPowerShellScript);
+    UnpackString(m_pCrashDesc->m_dwPowerShellScriptArgsOffs, m_sPowerShellScriptArgs);
     UnpackString(m_pCrashDesc->m_dwEmailToOffs, m_sEmailTo);
     m_nSmtpPort = m_pCrashDesc->m_nSmtpPort;
     UnpackString(m_pCrashDesc->m_dwSmtpProxyServerOffs, m_sSmtpProxyServer);
     m_nSmtpProxyPort = m_pCrashDesc->m_nSmtpProxyPort;
     UnpackString(m_pCrashDesc->m_dwEmailSubjectOffs, m_sEmailSubject);
     UnpackString(m_pCrashDesc->m_dwEmailTextOffs, m_sEmailText);
-    memcpy(m_uPriorities, m_pCrashDesc->m_uPriorities, sizeof(UINT)*3);
+    memcpy(m_uPriorities, m_pCrashDesc->m_uPriorities, sizeof(UINT)*4);
     UnpackString(m_pCrashDesc->m_dwPrivacyPolicyURLOffs, m_sPrivacyPolicyURL);
     UnpackString(m_pCrashDesc->m_dwLangFileNameOffs, m_sLangFileName);
     UnpackString(m_pCrashDesc->m_dwPathToDebugHelpDllOffs, m_sDbgHelpPath);

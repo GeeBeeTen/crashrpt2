@@ -25,6 +25,12 @@ add_executable(ConsoleDemo ${source_files} ${header_files})
 # Add input link libraries
 target_link_libraries(ConsoleDemo CrashRpt)
 
+# Copy the sample PowerShell delivery script next to the built executable
+add_custom_command(TARGET ConsoleDemo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/SampleCrashScript.ps1"
+        "$<TARGET_FILE_DIR:ConsoleDemo>/SampleCrashScript.ps1")
+
 set_target_properties(ConsoleDemo PROPERTIES DEBUG_POSTFIX d )
 
 INSTALL(TARGETS ConsoleDemo LIBRARY DESTINATION ${CRASHRPT_INSTALLDIR_BIN}

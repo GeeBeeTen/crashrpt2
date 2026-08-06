@@ -81,6 +81,8 @@ CRASHRPTAPI(int) crInstallW(CR_INSTALL_INFOW* pInfo)
     LPCTSTR ptszCustomSenderIcon = strconv.w2t((LPWSTR)pInfo->pszCustomSenderIcon);
 	LPCTSTR ptszSmtpLogin = strconv.w2t((LPWSTR)pInfo->pszSmtpLogin);
 	LPCTSTR ptszSmtpPassword = strconv.w2t((LPWSTR)pInfo->pszSmtpPassword);
+	LPCTSTR ptszPowerShellScript = strconv.w2t((LPWSTR)pInfo->pszPowerShellScript);
+	LPCTSTR ptszPowerShellScriptArgs = strconv.w2t((LPWSTR)pInfo->pszPowerShellScriptArgs);
 
     int nInitResult = pCrashHandler->Init(
         ptszAppName,
@@ -105,7 +107,9 @@ CRASHRPTAPI(int) crInstallW(CR_INSTALL_INFOW* pInfo)
 		ptszSmtpPassword,
 		pInfo->nRestartTimeout,
 		pInfo->nMaxReportsPerDay,
-        pInfo->nSmtpType
+        pInfo->nSmtpType,
+		ptszPowerShellScript,
+		ptszPowerShellScriptArgs
         );
 
     if(nInitResult!=0)
@@ -187,6 +191,8 @@ CRASHRPTAPI(int) crInstallA(CR_INSTALL_INFOA* pInfo)
     LPCTSTR ptszCustomSenderIcon = strconv.a2t((LPSTR)pInfo->pszCustomSenderIcon);
 	LPCTSTR ptszSmtpLogin = strconv.a2t((LPSTR)pInfo->pszSmtpLogin);
 	LPCTSTR ptszSmtpPassword = strconv.a2t((LPSTR)pInfo->pszSmtpPassword);
+	LPCTSTR ptszPowerShellScript = strconv.a2t((LPSTR)pInfo->pszPowerShellScript);
+	LPCTSTR ptszPowerShellScriptArgs = strconv.a2t((LPSTR)pInfo->pszPowerShellScriptArgs);
 
     int nInitResult = pCrashHandler->Init(
 		ptszAppName,
@@ -207,11 +213,13 @@ CRASHRPTAPI(int) crInstallA(CR_INSTALL_INFOA* pInfo)
         ptszEmailText,
         ptszSmtpProxy,
         ptszCustomSenderIcon,
-		ptszSmtpLogin,
-		ptszSmtpPassword,
-		pInfo->nRestartTimeout,
-		pInfo->nMaxReportsPerDay,
-        pInfo->nSmtpType
+        ptszSmtpLogin,
+        ptszSmtpPassword,
+        pInfo->nRestartTimeout,
+        pInfo->nMaxReportsPerDay,
+        pInfo->nSmtpType,
+        ptszPowerShellScript,
+        ptszPowerShellScriptArgs
         );
 
     if(nInitResult!=0)

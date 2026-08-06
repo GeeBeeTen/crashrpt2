@@ -46,27 +46,27 @@ CCrashHandler::CCrashHandler()
     m_nSmtpPort = 25;
     m_nSmtpProxyPort = 2525;
     m_nSmtpType = 0;
-    memset(&m_uPriorities, 0, 3*sizeof(UINT));
+    memset(&m_uPriorities, 0, 4*sizeof(UINT));
     m_lpfnCallback = NULL;
-	m_bAddScreenshot = FALSE;
+    m_bAddScreenshot = FALSE;
     m_dwScreenshotFlags = 0;
     m_nJpegQuality = 95;
-	m_bAddVideo = FALSE;
-	m_dwVideoFlags = 0;
-	m_nVideoDuration = 60*1000; // 60 sec
-	m_nVideoFrameInterval = 500; // 500 msec
-	m_DesiredFrameSize.cx = 0; // default video frame size
-	m_DesiredFrameSize.cy = 0;
-	m_hWndVideoParent = NULL;
+    m_bAddVideo = FALSE;
+    m_dwVideoFlags = 0;
+    m_nVideoDuration = 60*1000; // 60 sec
+    m_nVideoFrameInterval = 500; // 500 msec
+    m_DesiredFrameSize.cx = 0; // default video frame size
+    m_DesiredFrameSize.cy = 0;
+    m_hWndVideoParent = NULL;
     m_hEvent = NULL;
-	m_hEvent2 = NULL;
+    m_hEvent2 = NULL;
     m_pCrashDesc = NULL;
-	m_hSenderProcess = NULL;
-	m_pfnCallback2W = NULL;
-	m_pfnCallback2A = NULL;
-	m_pCallbackParam = NULL;
-	m_nCallbackRetCode = CR_CB_NOTIFY_NEXT_STAGE;
-	m_bContinueExecution = TRUE;
+    m_hSenderProcess = NULL;
+    m_pfnCallback2W = NULL;
+    m_pfnCallback2A = NULL;
+    m_pCallbackParam = NULL;
+    m_nCallbackRetCode = CR_CB_NOTIFY_NEXT_STAGE;
+    m_bContinueExecution = TRUE;
 
     // Init exception handler pointers
     InitPrevExceptionHandlerPointers();
@@ -97,12 +97,13 @@ int CCrashHandler::Init(
         LPCTSTR lpcszEmailText,
         LPCTSTR lpcszSmtpProxy,
         LPCTSTR lpcszCustomSenderIcon,
-		LPCTSTR lpcszSmtpLogin,
-		LPCTSTR lpcszSmtpPassword,
-		int nRestartTimeout,
-		int nMaxReportsPerDay,
-        int nSmtpType
-    )
+        LPCTSTR lpcszSmtpLogin,
+        LPCTSTR lpcszSmtpPassword,
+        int nRestartTimeout,
+        int nMaxReportsPerDay,
+        int nSmtpType,
+        LPCTSTR lpcszPowerShellScript,
+        LPCTSTR lpcszPowerShellScriptArgs)
 {
 	// This method initializes configuration parameters,
 	// creates shared memory buffer and saves the configuration parameters there,
@@ -188,6 +189,18 @@ int CCrashHandler::Init(
         m_sUrl = CString(lpcszUrl);
     }
 
+    // Save path to PowerShell script used to deliver error report
+    if(lpcszPowerShellScript!=NULL)
+    {
+        m_sPowerShellScript = CString(lpcszPowerShellScript);
+    }
+
+    // Save extra command-line arguments for the PowerShell script
+    if(lpcszPowerShellScriptArgs!=NULL)
+    {
+        m_sPowerShellScriptArgs = CString(lpcszPowerShellScriptArgs);
+    }
+
     // Check that we store ZIP archives only when error reports are not being sent.
     BOOL bSendErrorReport = (dwFlags&CR_INST_DONT_SEND_REPORT)?FALSE:TRUE;
     BOOL bStoreZIPArchives = (dwFlags&CR_INST_STORE_ZIP_ARCHIVES)?TRUE:FALSE;
@@ -259,9 +272,9 @@ int CCrashHandler::Init(
 
     // Save crash report delivery priorities
     if(puPriorities!=NULL)
-        memcpy(&m_uPriorities, puPriorities, 3*sizeof(UINT));
+        memcpy(&m_uPriorities, puPriorities, 4*sizeof(UINT));
     else
-        memset(&m_uPriorities, 0, 3*sizeof(UINT));
+        memset(&m_uPriorities, 0, 4*sizeof(UINT));
 
     // Save privacy policy URL (if exists)
     if(lpcszPrivacyPolicyURL!=NULL)
@@ -557,7 +570,7 @@ CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pShared
     m_pTmpCrashDesc->m_bAddScreenshot = m_bAddScreenshot;
     m_pTmpCrashDesc->m_dwScreenshotFlags = m_dwScreenshotFlags;
 	m_pTmpCrashDesc->m_nJpegQuality = m_nJpegQuality;
-    memcpy(m_pTmpCrashDesc->m_uPriorities, m_uPriorities, sizeof(UINT)*3);
+    memcpy(m_pTmpCrashDesc->m_uPriorities, m_uPriorities, sizeof(UINT)*4);
 	m_pTmpCrashDesc->m_bAddVideo = m_bAddVideo;
 	m_pTmpCrashDesc->m_hWndVideoParent = m_hWndVideoParent;
 	m_pTmpCrashDesc->m_dwProcessId = GetCurrentProcessId();
@@ -576,6 +589,8 @@ CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pShared
     m_pTmpCrashDesc->m_dwUnsentCrashReportsFolderOffs = PackString(m_sUnsentCrashReportsFolder);
     m_pTmpCrashDesc->m_dwCustomSenderIconOffs = PackString(m_sCustomSenderIcon);
     m_pTmpCrashDesc->m_dwUrlOffs = PackString(m_sUrl);
+    m_pTmpCrashDesc->m_dwPowerShellScriptOffs = PackString(m_sPowerShellScript);
+    m_pTmpCrashDesc->m_dwPowerShellScriptArgsOffs = PackString(m_sPowerShellScriptArgs);
     m_pTmpCrashDesc->m_dwEmailToOffs = PackString(m_sEmailTo);
     m_pTmpCrashDesc->m_dwEmailSubjectOffs = PackString(m_sEmailSubject);
     m_pTmpCrashDesc->m_dwEmailTextOffs = PackString(m_sEmailText);

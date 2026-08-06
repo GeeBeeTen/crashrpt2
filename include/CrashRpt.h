@@ -465,6 +465,7 @@ crSetCrashCallbackA(
 #define CR_HTTP 0  //!< Send error report via HTTP (or HTTPS) connection.
 #define CR_SMTP 1  //!< Send error report via SMTP connection.
 #define CR_SMAPI 2 //!< Send error report via simple MAPI (using default mail client).
+#define CR_POWERSHELL 3 //!< Deliver error report by invoking a configurable PowerShell script (see \ref pszPowerShellScript).
 
 //! Special priority constant that allows to skip certain delivery method.
 #define CR_NEGATIVE_PRIORITY ((UINT)-1)
@@ -734,6 +735,23 @@ crSetCrashCallbackA(
 *     This parameter defines the timeout (in seconds) for the application restart (when using \ref CR_INST_APP_RESTART flag).
 *     It is recommended to set this with zero (in such a case, the default restart timeout of 60 seconds is applied).
 *     Available since v.1.4.3.
+*
+*   \b pszPowerShellScript [in, optional]
+*
+*     Path to a PowerShell script (.ps1 file) used to deliver the error report when the \ref CR_POWERSHELL
+*     delivery method wins priority (see \ref uPriorities). When its turn comes, \b CrashSender.exe launches
+*     the script as <tt>powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "&lt;script&gt;" ...</tt>,
+*     passing crash report details (ZIP path, report folder, app name/version, crash GUID, and E-mail
+*     to/from/subject/body-file) as named command-line arguments. The script's exit code determines success
+*     (0) or failure (non-zero); on failure delivery falls through to the next-priority method, same as for
+*     the other delivery methods. If this parameter is NULL or empty, the \ref CR_POWERSHELL delivery method
+*     is skipped even if it has non-negative priority.
+*
+*   \b pszPowerShellScriptArgs [in, optional]
+*
+*     Extra, application-defined command-line arguments appended after the built-in ones (see
+*     \ref pszPowerShellScript) when launching the PowerShell script, e.g. <tt>_T("-Environment Production -Ticket 12345")</tt>.
+*     Use this to pass custom parameters your script defines. Ignored if \ref pszPowerShellScript is not set.
 */
 
 typedef struct tagCR_INSTALL_INFOW
@@ -762,6 +780,8 @@ typedef struct tagCR_INSTALL_INFOW
 	int nRestartTimeout;            //!< Timeout for application restart.
 	int nMaxReportsPerDay;          //!< Maximum number of crash reports that will be sent per calendar day.
     int nSmtpType;                  //!< SMTP type. 0 - default, 1 - SMTP with SSL/TLS support (available since v.1.3.1).
+	LPCWSTR pszPowerShellScript;    //!< Path to a PowerShell script used to deliver error report (see \ref CR_POWERSHELL).
+	LPCWSTR pszPowerShellScriptArgs; //!< Extra command-line arguments appended when launching \ref pszPowerShellScript.
 }
 CR_INSTALL_INFOW;
 
@@ -798,6 +818,8 @@ typedef struct tagCR_INSTALL_INFOA
 	int nRestartTimeout;           //!< Timeout for application restart.
 	int nMaxReportsPerDay;         //!< Maximum number of crash reports that will be sent per calendar day.
     int nSmtpType;                  //!< SMTP type. 0 - default, 1 - SMTP with SSL/TLS support (available since v.1.3.1).
+	LPCSTR pszPowerShellScript;    //!< Path to a PowerShell script used to deliver error report (see \ref CR_POWERSHELL).
+	LPCSTR pszPowerShellScriptArgs; //!< Extra command-line arguments appended when launching \ref pszPowerShellScript.
 }
 CR_INSTALL_INFOA;
 
@@ -1744,9 +1766,12 @@ crGetLastErrorMsgA(
 *      // The URL to send reports via HTTP connection
 *      info.pszUrl = _T("http://myappname.com/utils/crashrpt.php");
 *      info.pfnCrashCallback = CrashCallback;
-*      info.uPriorities[CR_HTTP] = 3; // Try HTTP first
-*      info.uPriorities[CR_SMTP] = 2; // Try SMTP second
-*      info.uPriorities[CR_SMAPI] = 1; // Try system email program last
+*      info.uPriorities[CR_HTTP] = 4; // Try HTTP first
+*      info.uPriorities[CR_SMTP] = 3; // Try SMTP second
+*      info.uPriorities[CR_SMAPI] = 2; // Try system email program third
+*      info.uPriorities[CR_POWERSHELL] = 1; // Fall back to a custom PowerShell script
+*      info.pszPowerShellScript = _T("C:\\MyApp\\SendCrashReport.ps1");
+*      info.pszPowerShellScriptArgs = _T("-Environment Production"); // Extra args your script defines
 *
 *      // Install crash reporting
 *      CrAutoInstallHelper cr_install_helper(&info);

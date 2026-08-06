@@ -206,6 +206,9 @@ private:
     // Sends error report over Simple MAPI.
     BOOL SendOverSMAPI();
 
+    // Delivers error report by invoking a configurable PowerShell script.
+    BOOL SendOverPowerShell();
+
 	// Sends all recently queued error reports in turn.
 	BOOL SendRecentReports();
 

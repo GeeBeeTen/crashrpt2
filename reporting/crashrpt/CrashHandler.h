@@ -124,11 +124,13 @@ public:
         __in_opt LPCTSTR lpcszEmailText = NULL,
         __in_opt LPCTSTR lpcszSmtpProxy = NULL,
         __in_opt LPCTSTR lpcszCustomSenderIcon = NULL,
-		__in_opt LPCTSTR lpcszSmtpLogin = NULL,
-		__in_opt LPCTSTR lpcszSmtpPassword = NULL,
-		__in_opt int nRestartTimeout = 0,
-		__in_opt int nMaxReportsPerDay = 0,
-        __in_opt int nSmtpType = 0
+        __in_opt LPCTSTR lpcszSmtpLogin = NULL,
+        __in_opt LPCTSTR lpcszSmtpPassword = NULL,
+        __in_opt int nRestartTimeout = 0,
+        __in_opt int nMaxReportsPerDay = 0,
+        __in_opt int nSmtpType = 0,
+        __in_opt LPCTSTR lpcszPowerShellScript = NULL,
+        __in_opt LPCTSTR lpcszPowerShellScriptArgs = NULL
         );
 
 	// Returns TRUE if object was initialized.
@@ -301,6 +303,8 @@ public:
 	int m_nRestartTimeout;         // Restart timeout.
     int m_nMaxReportsPerDay;       // Maximum number of crash reports that will be sent per calendar day.
     CString m_sUrl;                // Url to use when sending error report over HTTP.
+    CString m_sPowerShellScript;   // Path to PowerShell script used to deliver error report.
+    CString m_sPowerShellScriptArgs; // Extra command-line arguments for the PowerShell script.
     CString m_sEmailTo;            // E-mail recipient.
     int m_nSmtpPort;               // SMTP port.
     CString m_sSmtpProxyServer;    // SMTP proxy.
@@ -310,7 +314,7 @@ public:
     int m_nSmtpType;                // SMTP type. 0 - default, 1 - force SSL, 2 - never use TLS (previous behaviour).
     CString m_sEmailSubject;       // E-mail subject.
     CString m_sEmailText;          // E-mail text.
-    UINT m_uPriorities[3];         // Delivery priorities.
+    UINT m_uPriorities[4];         // Delivery priorities.
     CString m_sPrivacyPolicyURL;   // Privacy policy URL.
     CString m_sPathToCrashSender;  // Path to CrashSender.exe
     CString m_sLangFileName;       // Language file.

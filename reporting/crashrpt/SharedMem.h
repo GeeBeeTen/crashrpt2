@@ -76,13 +76,15 @@ struct CRASH_DESCRIPTION
     DWORD m_dwInstallFlags;        // Flags passed to crInstall() function.
     int m_nSmtpPort;               // Smtp port.
     int m_nSmtpProxyPort;          // Smtp proxy port.
-    UINT m_uPriorities[3];         // Delivery priorities.
+    UINT m_uPriorities[4];         // Delivery priorities.
     MINIDUMP_TYPE m_MinidumpType;  // Minidump type.
     //BOOL m_bAppRestart;            // Packed into flags
     BOOL  m_bAddScreenshot;        // Add screenshot?
     DWORD m_dwScreenshotFlags;     // Screenshot flags.
     int m_nJpegQuality;            // Jpeg image quality.
     DWORD m_dwUrlOffs;             // Offset of recipient URL.
+    DWORD m_dwPowerShellScriptOffs; // Offset of PowerShell script path.
+    DWORD m_dwPowerShellScriptArgsOffs; // Offset of extra PowerShell script arguments.
     DWORD m_dwAppNameOffs;         // Offset of application name.
     DWORD m_dwAppVersionOffs;      // Offset of app version.
     DWORD m_dwLangFileNameOffs;    // Offset of language INI file name.

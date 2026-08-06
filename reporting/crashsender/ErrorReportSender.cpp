@@ -2101,6 +2101,9 @@ BOOL CErrorReportSender::SendReport()
 	// Arrange priorities in reverse order
     std::multimap<int, int> order;
 
+    std::pair<int, int> pair4(m_CrashInfo.m_uPriorities[CR_POWERSHELL], CR_POWERSHELL);
+    order.insert(pair4);
+
     std::pair<int, int> pair3(m_CrashInfo.m_uPriorities[CR_SMAPI], CR_SMAPI);
     order.insert(pair3);
 
@@ -2132,13 +2135,16 @@ BOOL CErrorReportSender::SendReport()
             bResult = SendOverSMTP();
         else if(id==CR_SMAPI)
             bResult = SendOverSMAPI();
+        else if(id==CR_POWERSHELL)
+            bResult = SendOverPowerShell();
 
 		// Check if this attempt has failed
         if(bResult==FALSE)
             continue;
 
-		// If currently sending through Simple MAPI, do not wait for completion
-        if(id==CR_SMAPI && bResult==TRUE)
+		// If currently sending through Simple MAPI or a PowerShell script, do not wait for completion
+		// (both of these are performed synchronously and already know their outcome).
+        if((id==CR_SMAPI || id==CR_POWERSHELL) && bResult==TRUE)
         {
             status = 0;
             break;
@@ -2559,6 +2565,133 @@ BOOL CErrorReportSender::SendOverSMAPI()
         m_Assync.SetProgress(_T("Sent OK"), 100, false);
 
     return bSend;
+}
+
+// This method delivers the error report by invoking a configurable PowerShell script.
+BOOL CErrorReportSender::SendOverPowerShell()
+{
+	// Kaneva - Added
+	auto pReport = GetReport();
+	if (!pReport) return FALSE;
+
+	strconv_t strconv;
+
+	// Check our config - should we deliver the report via PowerShell script or not?
+	if(m_CrashInfo.m_uPriorities[CR_POWERSHELL]==CR_NEGATIVE_PRIORITY)
+	{
+		m_Assync.SetProgress(_T("Delivering error report via PowerShell script is disabled (negative priority); skipping."), 0);
+		return FALSE;
+	}
+
+	// Check that a script path is configured
+	if(m_CrashInfo.m_sPowerShellScript.IsEmpty())
+	{
+		m_Assync.SetProgress(_T("No PowerShell script is specified for delivering error report; skipping."), 0);
+		return FALSE;
+	}
+
+	m_Assync.SetProgress(_T("Delivering error report using PowerShell script..."), 0, false);
+
+	// Write the E-mail body text to a temp file, so the script receives it without CLI-quoting issues
+	// (same idea as the MD5 sidecar file written for the SMTP/SMAPI transports above).
+	CString sBodyText = m_CrashInfo.m_sEmailText.IsEmpty() ? FormatEmailText() : m_CrashInfo.m_sEmailText;
+	CString sTempDir;
+	Utility::getTempDirectory(sTempDir);
+	CString sEmailBodyFile;
+	sEmailBodyFile.Format(_T("%s\\%s_email_body.txt"), (LPCTSTR)sTempDir, (LPCTSTR)pReport->GetCrashGUID());
+
+	FILE* f = NULL;
+	_TFOPEN_S(f, sEmailBodyFile, _T("wt"));
+	if(f!=NULL)
+	{
+		LPCSTR szBodyText = strconv.t2a(sBodyText.GetBuffer(0));
+		fwrite(szBodyText, strlen(szBodyText), 1, f);
+		fclose(f);
+	}
+	else
+	{
+		sEmailBodyFile.Empty();
+	}
+
+	// Build the command line for launching the script.
+	CString sCmdLine;
+	sCmdLine.Format(
+		_T("powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"%s\" ")
+		_T("-ZipPath \"%s\" -ReportDir \"%s\" -AppName \"%s\" -AppVersion \"%s\" -CrashGUID \"%s\" ")
+		_T("-EmailTo \"%s\" -EmailFrom \"%s\" -EmailSubject \"%s\" -EmailBodyFile \"%s\""),
+		(LPCTSTR)m_CrashInfo.m_sPowerShellScript,
+		(LPCTSTR)m_sZipName,
+		(LPCTSTR)pReport->GetErrorReportDirName(),
+		(LPCTSTR)pReport->GetAppName(),
+		(LPCTSTR)pReport->GetAppVersion(),
+		(LPCTSTR)pReport->GetCrashGUID(),
+		(LPCTSTR)m_CrashInfo.m_sEmailTo,
+		(LPCTSTR)pReport->GetEmailFrom(),
+		(LPCTSTR)m_CrashInfo.m_sEmailSubject,
+		(LPCTSTR)sEmailBodyFile);
+
+	// Append any extra, application-defined arguments.
+	if(!m_CrashInfo.m_sPowerShellScriptArgs.IsEmpty())
+	{
+		sCmdLine += _T(" ");
+		sCmdLine += m_CrashInfo.m_sPowerShellScriptArgs;
+	}
+
+	STARTUPINFO si;
+	memset(&si, 0, sizeof(STARTUPINFO));
+	si.cb = sizeof(STARTUPINFO);
+
+	PROCESS_INFORMATION pi;
+	memset(&pi, 0, sizeof(PROCESS_INFORMATION));
+
+	// Launch the script hidden (no console window), same CreateProcess pattern as RestartApp().
+	BOOL bCreateProcess = CreateProcess(
+		NULL, sCmdLine.GetBuffer(0), NULL, NULL, FALSE,
+		CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+	if(!bCreateProcess)
+	{
+		m_Assync.SetProgress(_T("Error launching PowerShell script!"), 100, false);
+		if(!sEmailBodyFile.IsEmpty())
+			Utility::RecycleFile(sEmailBodyFile, true);
+		return FALSE;
+	}
+
+	// Wait for the script to finish, bounded so a hung script can't block crash reporting forever.
+	const DWORD dwTimeoutMs = 60000;
+	DWORD dwWait = WaitForSingleObject(pi.hProcess, dwTimeoutMs);
+
+	BOOL bTimedOut = (dwWait!=WAIT_OBJECT_0);
+	DWORD dwExitCode = (DWORD)-1;
+	if(bTimedOut)
+	{
+		TerminateProcess(pi.hProcess, (UINT)-1);
+		m_Assync.SetProgress(_T("PowerShell script timed out; terminated."), 100, false);
+	}
+	else
+	{
+		GetExitCodeProcess(pi.hProcess, &dwExitCode);
+	}
+
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	if(!sEmailBodyFile.IsEmpty())
+		Utility::RecycleFile(sEmailBodyFile, true);
+
+	if(bTimedOut || dwExitCode!=0)
+	{
+		if(!bTimedOut)
+		{
+			CString sMsg;
+			sMsg.Format(_T("PowerShell script exited with code %lu"), dwExitCode);
+			m_Assync.SetProgress(sMsg, 100, false);
+		}
+		return FALSE;
+	}
+
+	m_Assync.SetProgress(_T("PowerShell script completed successfully."), 100, false);
+	return TRUE;
 }
 
 CString CErrorReportSender::GetLangStr(LPCTSTR szSection, LPCTSTR szName)

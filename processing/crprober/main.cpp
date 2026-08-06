@@ -78,7 +78,7 @@ void print_usage()
     _tprintf(_T("  where the argument may be any of the following:\n"));
     _tprintf(_T("   /f <input_file>          Required. Absolute or relative path to input ZIP file name.\n"));
     _tprintf(_T("   /fmd5 <md5_file_or_dir>  Optional. Path to .md5 file containing MD5 hash for the <input_file> ")\
-             _T("or directory name where to search for the .md5 file. If this parameter is omitted, the .md5 file is searched "\)
+             _T("or directory name where to search for the .md5 file. If this parameter is omitted, the .md5 file is searched ")\
              _T("in the directory where <input_file> is located.\n"));
     _tprintf(_T("   /o <out_file_or_dir>     Optional. Output file name or directory name. Or use empty name \"\" ")\
              _T("to direct output to terminal. If this parameter is omitted, output is not generated.\n"));

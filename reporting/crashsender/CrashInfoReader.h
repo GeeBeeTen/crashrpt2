@@ -258,6 +258,8 @@ public:
 	CString     m_sSmtpLogin;           // SMTP login.
 	CString     m_sSmtpPassword;        // SMTP password.
     CString     m_sUrl;                 // URL (used for HTTP connection).
+    CString     m_sPowerShellScript;    // Path to PowerShell script used to deliver error report.
+    CString     m_sPowerShellScriptArgs; // Extra command-line arguments for the PowerShell script.
     BOOL        m_bSilentMode;          // Should we show GUI?
     BOOL        m_bSendErrorReport;     // Should we send error report now?
 	BOOL		m_bSendMandatory;       // Disable "Close" and "Other actions.." buttons on Error Report dialog.
@@ -269,7 +271,7 @@ public:
     CString     m_sRestartCmdLine;      // Command line for crashed app restart.
 	int         m_nRestartTimeout;      // Restart timeout.
     int         m_nMaxReportsPerDay;    // Maximum number of crash reports that will be sent per calendar day.
-    UINT        m_uPriorities[3];       // Error report delivery priorities.
+    UINT        m_uPriorities[4];       // Error report delivery priorities.
     CString     m_sPrivacyPolicyURL;    // Privacy policy URL.
     BOOL        m_bGenerateMinidump;    // Should we generate crash minidump file?
     MINIDUMP_TYPE m_MinidumpType;       // Minidump type.

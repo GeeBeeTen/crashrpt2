@@ -35,6 +35,19 @@ int main(int argc, char* argv[])
     info.pszEmailSubject = _T("CrashRpt Console Test 1.0.0 Error Report"); // Email subject
     info.pszEmailTo = _T("test@hotmail.com");      // Email recipient address
 
+    // Optionally forward crash report delivery to a PowerShell script instead of (or before)
+    // sending over SMTP/Simple MAPI. The script is invoked with -ZipPath/-ReportDir/-AppName/etc.
+    // command-line arguments and its exit code (0 = success) decides whether delivery succeeded.
+    static TCHAR szPowerShellScript[MAX_PATH];
+    GetModuleFileName(NULL, szPowerShellScript, MAX_PATH);
+    TCHAR* pLastSlash = _tcsrchr(szPowerShellScript, _T('\\'));
+    if(pLastSlash!=NULL)
+        *(pLastSlash+1) = 0;
+    _tcscat_s(szPowerShellScript, MAX_PATH, _T("SampleCrashScript.ps1"));
+    info.pszPowerShellScript = szPowerShellScript;
+    info.pszPowerShellScriptArgs = _T("-Environment Test"); // Extra args the script defines
+    info.uPriorities[CR_POWERSHELL] = 10; // Try the PowerShell script first
+
     // Install crash handlers
     int nInstResult = crInstall(&info);            
     assert(nInstResult==0);
