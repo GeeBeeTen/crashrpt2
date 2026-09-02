@@ -250,6 +250,7 @@ public:
     CString     m_sAppName;             // Application name.
     CString     m_sCustomSenderIcon;    // Custom icon resource for Error Report dialog.
     CString     m_sEmailTo;             // E-mail recipient address.
+    CString     m_sEmailFrom;           // Default E-mail sender address (from CR_INSTALL_INFO::pszEmailFrom); overrides the persisted INI value if set.
     CString     m_sEmailSubject;        // E-mail subject.
     CString     m_sEmailText;           // E-mail text.
     int         m_nSmtpPort;            // SMTP port.

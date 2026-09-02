@@ -83,6 +83,7 @@ CRASHRPTAPI(int) crInstallW(CR_INSTALL_INFOW* pInfo)
 	LPCTSTR ptszSmtpPassword = strconv.w2t((LPWSTR)pInfo->pszSmtpPassword);
 	LPCTSTR ptszPowerShellScript = strconv.w2t((LPWSTR)pInfo->pszPowerShellScript);
 	LPCTSTR ptszPowerShellScriptArgs = strconv.w2t((LPWSTR)pInfo->pszPowerShellScriptArgs);
+	LPCTSTR ptszEmailFrom = strconv.w2t((LPWSTR)pInfo->pszEmailFrom);
 
     int nInitResult = pCrashHandler->Init(
         ptszAppName,
@@ -109,7 +110,8 @@ CRASHRPTAPI(int) crInstallW(CR_INSTALL_INFOW* pInfo)
 		pInfo->nMaxReportsPerDay,
         pInfo->nSmtpType,
 		ptszPowerShellScript,
-		ptszPowerShellScriptArgs
+		ptszPowerShellScriptArgs,
+		ptszEmailFrom
         );
 
     if(nInitResult!=0)
@@ -193,6 +195,7 @@ CRASHRPTAPI(int) crInstallA(CR_INSTALL_INFOA* pInfo)
 	LPCTSTR ptszSmtpPassword = strconv.a2t((LPSTR)pInfo->pszSmtpPassword);
 	LPCTSTR ptszPowerShellScript = strconv.a2t((LPSTR)pInfo->pszPowerShellScript);
 	LPCTSTR ptszPowerShellScriptArgs = strconv.a2t((LPSTR)pInfo->pszPowerShellScriptArgs);
+	LPCTSTR ptszEmailFrom = strconv.a2t((LPSTR)pInfo->pszEmailFrom);
 
     int nInitResult = pCrashHandler->Init(
 		ptszAppName,
@@ -219,7 +222,8 @@ CRASHRPTAPI(int) crInstallA(CR_INSTALL_INFOA* pInfo)
         pInfo->nMaxReportsPerDay,
         pInfo->nSmtpType,
         ptszPowerShellScript,
-        ptszPowerShellScriptArgs
+        ptszPowerShellScriptArgs,
+        ptszEmailFrom
         );
 
     if(nInitResult!=0)

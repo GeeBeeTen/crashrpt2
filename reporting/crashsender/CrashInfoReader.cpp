@@ -455,6 +455,14 @@ int CCrashInfoReader::Init(LPCTSTR szFileMappingName)
     {
         CollectMiscCrashInfo(eri);
 
+        // If the application developer specified a default sender E-mail via
+        // CR_INSTALL_INFO::pszEmailFrom, use it as the report's sender address.
+        // This ensures the override is used even when the Error Report dialog
+        // is not shown (silent mode), where the user never gets a chance to
+        // enter/confirm an E-mail address. If the dialog is shown, whatever the
+        // user enters there (via UpdateUserInfo()) still takes precedence.
+        eri.m_sEmailFrom = m_sEmailFrom;
+
         eri.m_sErrorReportDirName = m_sUnsentCrashReportsFolder + _T("\\") + eri.m_sCrashGUID;
         Utility::CreateFolder(eri.m_sErrorReportDirName);
 
@@ -555,6 +563,7 @@ int CCrashInfoReader::UnpackCrashDescription(CErrorReportInfo& eri)
     UnpackString(m_pCrashDesc->m_dwPowerShellScriptOffs, m_sPowerShellScript);
     UnpackString(m_pCrashDesc->m_dwPowerShellScriptArgsOffs, m_sPowerShellScriptArgs);
     UnpackString(m_pCrashDesc->m_dwEmailToOffs, m_sEmailTo);
+    UnpackString(m_pCrashDesc->m_dwEmailFromOffs, m_sEmailFrom);
     m_nSmtpPort = m_pCrashDesc->m_nSmtpPort;
     UnpackString(m_pCrashDesc->m_dwSmtpProxyServerOffs, m_sSmtpProxyServer);
     m_nSmtpProxyPort = m_pCrashDesc->m_nSmtpProxyPort;
@@ -1524,6 +1533,12 @@ CString CCrashInfoReader::GetErrorMsg()
 
 CString CCrashInfoReader::GetPersistentUserEmail()
 {
+	// If the application developer specified a default sender E-mail via
+	// CR_INSTALL_INFO::pszEmailFrom, it takes precedence over the value
+	// persisted in the INI file.
+	if(!m_sEmailFrom.IsEmpty())
+		return m_sEmailFrom;
+
 	// Read the E-mail last entered by user and stored in INI file.
 	return Utility::GetINIString(m_sINIFile, _T("General"), _T("EmailFrom"));
 }

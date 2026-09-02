@@ -103,7 +103,8 @@ int CCrashHandler::Init(
         int nMaxReportsPerDay,
         int nSmtpType,
         LPCTSTR lpcszPowerShellScript,
-        LPCTSTR lpcszPowerShellScriptArgs)
+        LPCTSTR lpcszPowerShellScriptArgs,
+        LPCTSTR lpcszEmailFrom)
 {
 	// This method initializes configuration parameters,
 	// creates shared memory buffer and saves the configuration parameters there,
@@ -219,6 +220,10 @@ int CCrashHandler::Init(
 
     // Save E-mail recipient(s) address
     m_sEmailTo = lpcszTo;
+
+    // Save default E-mail sender address (overrides CrashSender.exe's persisted INI value)
+    m_sEmailFrom = lpcszEmailFrom;
+
     m_nSmtpPort = 25;
     m_nSmtpType = nSmtpType;
 
@@ -592,6 +597,7 @@ CRASH_DESCRIPTION* CCrashHandler::PackCrashInfoIntoSharedMem(CSharedMem* pShared
     m_pTmpCrashDesc->m_dwPowerShellScriptOffs = PackString(m_sPowerShellScript);
     m_pTmpCrashDesc->m_dwPowerShellScriptArgsOffs = PackString(m_sPowerShellScriptArgs);
     m_pTmpCrashDesc->m_dwEmailToOffs = PackString(m_sEmailTo);
+    m_pTmpCrashDesc->m_dwEmailFromOffs = PackString(m_sEmailFrom);
     m_pTmpCrashDesc->m_dwEmailSubjectOffs = PackString(m_sEmailSubject);
     m_pTmpCrashDesc->m_dwEmailTextOffs = PackString(m_sEmailText);
     m_pTmpCrashDesc->m_dwSmtpProxyServerOffs = PackString(m_sSmtpProxyServer);

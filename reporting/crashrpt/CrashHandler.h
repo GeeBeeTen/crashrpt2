@@ -130,7 +130,8 @@ public:
         __in_opt int nMaxReportsPerDay = 0,
         __in_opt int nSmtpType = 0,
         __in_opt LPCTSTR lpcszPowerShellScript = NULL,
-        __in_opt LPCTSTR lpcszPowerShellScriptArgs = NULL
+        __in_opt LPCTSTR lpcszPowerShellScriptArgs = NULL,
+        __in_opt LPCTSTR lpcszEmailFrom = NULL
         );
 
 	// Returns TRUE if object was initialized.
@@ -306,6 +307,7 @@ public:
     CString m_sPowerShellScript;   // Path to PowerShell script used to deliver error report.
     CString m_sPowerShellScriptArgs; // Extra command-line arguments for the PowerShell script.
     CString m_sEmailTo;            // E-mail recipient.
+    CString m_sEmailFrom;          // Default E-mail sender address (overrides CrashSender.exe's persisted INI value).
     int m_nSmtpPort;               // SMTP port.
     CString m_sSmtpProxyServer;    // SMTP proxy.
     int m_nSmtpProxyPort;          // SMTP proxy port.

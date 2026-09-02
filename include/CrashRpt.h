@@ -752,6 +752,14 @@ crSetCrashCallbackA(
 *     Extra, application-defined command-line arguments appended after the built-in ones (see
 *     \ref pszPowerShellScript) when launching the PowerShell script, e.g. <tt>_T("-Environment Production -Ticket 12345")</tt>.
 *     Use this to pass custom parameters your script defines. Ignored if \ref pszPowerShellScript is not set.
+*
+*   \b pszEmailFrom [in, optional]
+*
+*     Default E-mail address of the crash report sender. When set, this value takes precedence over the
+*     address the user previously entered and CrashSender.exe persisted to its own INI file, and is used
+*     to prefill the "Your E-mail" field of the Error Report dialog (the user may still edit it) as well
+*     as the sender address used when delivering the report. If this parameter is NULL or empty, the
+*     address persisted in CrashSender.exe's INI file (if any) is used instead, same as before.
 */
 
 typedef struct tagCR_INSTALL_INFOW
@@ -782,6 +790,7 @@ typedef struct tagCR_INSTALL_INFOW
     int nSmtpType;                  //!< SMTP type. 0 - default, 1 - SMTP with SSL/TLS support (available since v.1.3.1).
 	LPCWSTR pszPowerShellScript;    //!< Path to a PowerShell script used to deliver error report (see \ref CR_POWERSHELL).
 	LPCWSTR pszPowerShellScriptArgs; //!< Extra command-line arguments appended when launching \ref pszPowerShellScript.
+	LPCWSTR pszEmailFrom;           //!< Default E-mail address of crash report sender; overrides CrashSender.exe's persisted INI value.
 }
 CR_INSTALL_INFOW;
 
@@ -820,6 +829,7 @@ typedef struct tagCR_INSTALL_INFOA
     int nSmtpType;                  //!< SMTP type. 0 - default, 1 - SMTP with SSL/TLS support (available since v.1.3.1).
 	LPCSTR pszPowerShellScript;    //!< Path to a PowerShell script used to deliver error report (see \ref CR_POWERSHELL).
 	LPCSTR pszPowerShellScriptArgs; //!< Extra command-line arguments appended when launching \ref pszPowerShellScript.
+	LPCSTR pszEmailFrom;           //!< Default E-mail address of crash report sender; overrides CrashSender.exe's persisted INI value.
 }
 CR_INSTALL_INFOA;
 
